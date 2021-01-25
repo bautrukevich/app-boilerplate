@@ -1,0 +1,92 @@
+version: "3.7"
+services:
+    gateway:
+        image: ${REGISTRY}/auction-gateway:${IMAGE_TAG}
+        restart: always
+        volumes:
+            - /etc/letsencrypt:/etc/letsencrypt:ro
+            - /var/www/html:/var/www/html:ro
+        ports:
+            - "80:80"
+            - "443:443"
+        depends_on:
+            - frontend
+            - api
+
+    frontend:
+        image: ${REGISTRY}/auction-frontend:${IMAGE_TAG}
+        restart: always
+
+    api:
+        image: ${REGISTRY}/auction-api:${IMAGE_TAG}
+        restart: always
+        depends_on:
+            - api-php-fpm
+
+    api-php-fpm:
+        image: ${REGISTRY}/auction-api-php-fpm:${IMAGE_TAG}
+        restart: always
+        environment:
+            APP_ENV: prod
+            APP_DEBUG: 0
+            DB_HOST: api-postgres
+            DB_USER: app
+            DB_PASSWORD: ${API_DB_PASSWORD}
+            DB_NAME: app
+            MAILER_HOST: ${API_MAILER_HOST}
+            MAILER_PORT: ${API_MAILER_PORT}
+            MAILER_USER: ${API_MAILER_USER}
+            MAILER_PASSWORD: ${API_MAILER_PASSWORD}
+            MAILER_ENCRYPTION: tls
+            MAILER_FROM_EMAIL: ${API_MAILER_FROM_EMAIL}
+            FRONTEND_URL: https://demo-auction.deworker.pro
+            API_URL: https://api.demo-auction.deworker.pro
+            SENTRY_DSN: ${SENTRY_DSN}
+            ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+            GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+            GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+            GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+            APPLE_CLIENT_ID: ${APPLE_CLIENT_ID}
+            APPLE_TEAM_ID: ${APPLE_TEAM_ID}
+            APPLE_KEY_FILE_ID: ${APPLE_KEY_FILE_ID}
+            APPLE_REDIRECT_URI: ${APPLE_REDIRECT_URI}
+
+    api-php-cli:
+        image: ${REGISTRY}/auction-api-php-cli:${IMAGE_TAG}
+        environment:
+            APP_ENV: prod
+            APP_DEBUG: 0
+            DB_HOST: api-postgres
+            DB_USER: app
+            DB_PASSWORD: ${API_DB_PASSWORD}
+            DB_NAME: app
+            MAILER_HOST: ${API_MAILER_HOST}
+            MAILER_PORT: ${API_MAILER_PORT}
+            MAILER_USER: ${API_MAILER_USER}
+            MAILER_PASSWORD: ${API_MAILER_PASSWORD}
+            MAILER_ENCRYPTION: tls
+            MAILER_FROM_EMAIL: ${API_MAILER_FROM_EMAIL}
+            FRONTEND_URL: https://demo-auction.deworker.pro
+            API_URL: https://api.demo-auction.deworker.pro
+            SENTRY_DSN: ${SENTRY_DSN}
+            ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+            GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+            GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+            GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+            APPLE_CLIENT_ID: ${APPLE_CLIENT_ID}
+            APPLE_TEAM_ID: ${APPLE_TEAM_ID}
+            APPLE_KEY_FILE_ID: ${APPLE_KEY_FILE_ID}
+            APPLE_REDIRECT_URI: ${APPLE_REDIRECT_URI}
+
+    api-postgres:
+        image: postgres:12.2-alpine
+        restart: always
+        environment:
+            POSTGRES_USER: app
+            POSTGRES_PASSWORD: ${API_DB_PASSWORD}
+            POSTGRES_DB: app
+        volumes:
+            - api-postgres:/var/lib/postgresql/data
+
+volumes:
+    api-postgres:
