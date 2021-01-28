@@ -34,7 +34,7 @@ docker-build:
 api-clear:
 	docker run --rm -v ${PWD}/api:/app -w /app alpine sh -c 'rm -rf var/cache/* var/log/*'
 
-api-init: api-permissions api-composer-install api-wait-db api-migrations api-fixtures
+api-init: api-permissions api-composer-install api-wait-db api-migrations-migrate api-fixtures
 
 api-permissions:
 	docker run --rm -v ${PWD}/api:/app -w /app alpine chmod 777 var/cache var/log
@@ -45,8 +45,11 @@ api-composer-install:
 api-wait-db:
 	docker-compose run --rm api-php-cli wait-for-it api-postgres:5432 -t 30
 
-api-migrations:
-	docker-compose run --rm api-php-cli composer app migrations:migrate
+api-migrations-migrate:
+	docker-compose run --rm api-php-cli composer app migrations:migrate -- --no-interaction --allow-no-migration
+
+api-migrations-diff:
+	docker-compose run --rm api-php-cli composer app migrations:diff
 
 api-fixtures:
 	 docker-compose run --rm api-php-cli composer app fixtures:load
@@ -109,15 +112,16 @@ frontend-test-watch:
 build: build-gateway build-frontend build-api
 
 build-gateway:
-	docker --log-level=debug build --pull --file=gateway/docker/production/nginx/Dockerfile --tag=${REGISTRY}/auction-gateway:${IMAGE_TAG} gateway/docker
+	docker --log-level=debug build --pull --file=gateway/docker/production/nginx/Dockerfile \
+			--tag=${REGISTRY}/${PROJECT_NAME}-gateway:${IMAGE_TAG} gateway/docker
 
 build-frontend:
-	docker --log-level=debug build --pull --file=frontend/docker/production/nginx/Dockerfile --tag=${REGISTRY}/auction-frontend:${IMAGE_TAG} frontend
+	docker --log-level=debug build --pull --file=frontend/docker/production/nginx/Dockerfile --tag=${REGISTRY}/${PROJECT_NAME}-frontend:${IMAGE_TAG} frontend
 
 build-api:
-	docker --log-level=debug build --pull --file=api/docker/production/nginx/Dockerfile --tag=${REGISTRY}/auction-api:${IMAGE_TAG} api
-	docker --log-level=debug build --pull --file=api/docker/production/php-fpm/Dockerfile --tag=${REGISTRY}/auction-api-php-fpm:${IMAGE_TAG} api
-	docker --log-level=debug build --pull --file=api/docker/production/php-cli/Dockerfile --tag=${REGISTRY}/auction-api-php-cli:${IMAGE_TAG} api
+	docker --log-level=debug build --pull --file=api/docker/production/nginx/Dockerfile --tag=${REGISTRY}/${PROJECT_NAME}-api:${IMAGE_TAG} api
+	docker --log-level=debug build --pull --file=api/docker/production/php-fpm/Dockerfile --tag=${REGISTRY}/${PROJECT_NAME}-api-php-fpm:${IMAGE_TAG} api
+	docker --log-level=debug build --pull --file=api/docker/production/php-cli/Dockerfile --tag=${REGISTRY}/${PROJECT_NAME}-api-php-cli:${IMAGE_TAG} api
 
 try-build:
 	REGISTRY=localhost IMAGE_TAG=0 make build
@@ -125,21 +129,21 @@ try-build:
 push: push-gateway push-frontend push-api
 
 push-gateway:
-	docker push ${REGISTRY}/auction-gateway:${IMAGE_TAG}
+	docker push ${REGISTRY}/${PROJECT_NAME}-gateway:${IMAGE_TAG}
 
 push-frontend:
-	docker push ${REGISTRY}/auction-frontend:${IMAGE_TAG}
+	docker push ${REGISTRY}/${PROJECT_NAME}-frontend:${IMAGE_TAG}
 
 push-api:
-	docker push ${REGISTRY}/auction-api:${IMAGE_TAG}
-	docker push ${REGISTRY}/auction-api-php-fpm:${IMAGE_TAG}
-	docker push ${REGISTRY}/auction-api-php-cli:${IMAGE_TAG}
+	docker push ${REGISTRY}/${PROJECT_NAME}-api:${IMAGE_TAG}
+	docker push ${REGISTRY}/${PROJECT_NAME}-api-php-fpm:${IMAGE_TAG}
+	docker push ${REGISTRY}/${PROJECT_NAME}-api-php-cli:${IMAGE_TAG}
 
 deploy:
 	ssh ${HOST} -p ${PORT} 'rm -rf site_${BUILD_NUMBER}'
 	ssh ${HOST} -p ${PORT} 'mkdir site_${BUILD_NUMBER}'
 	scp -P ${PORT} docker-compose-production.yml ${HOST}:site_${BUILD_NUMBER}/docker-compose.yml
-	ssh ${HOST} -p ${PORT} 'cd site_${BUILD_NUMBER} && echo "COMPOSE_PROJECT_NAME=auction" >> .env'
+	ssh ${HOST} -p ${PORT} 'cd site_${BUILD_NUMBER} && echo "PROJECT_NAME=${PROJECT_NAME}" >> .env'
 	ssh ${HOST} -p ${PORT} 'cd site_${BUILD_NUMBER} && echo "REGISTRY=${REGISTRY}" >> .env'
 	ssh ${HOST} -p ${PORT} 'cd site_${BUILD_NUMBER} && echo "IMAGE_TAG=${IMAGE_TAG}" >> .env'
 	ssh ${HOST} -p ${PORT} 'cd site_${BUILD_NUMBER} && echo "API_DB_PASSWORD=${API_DB_PASSWORD}" >> .env'

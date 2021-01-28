@@ -84,7 +84,8 @@ return [
             'subscribers' => [],
             'metadata_dirs' => [
                 __DIR__ . '/../../vendor/postsms/fields/src',
-                __DIR__ . '/../../vendor/postsms/enum/src'
+                __DIR__ . '/../../vendor/postsms/enum/src',
+                __DIR__ . '/../../src',
             ],
             'types' => [
                 UuidType::NAME => UuidType::class,

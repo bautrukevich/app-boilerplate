@@ -20,6 +20,8 @@ class HomeAction implements RequestHandlerInterface
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        return new JsonResponse();
+        return new JsonResponse([
+            'hello' => ', world!'
+        ]);
     }
 }

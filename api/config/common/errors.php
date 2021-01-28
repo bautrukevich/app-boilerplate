@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\ErrorHandler\LogErrorHandler;
-use App\ErrorHandler\SentryDecorator;
+use PostSMS\Foundation\ErrorHandler\LogErrorHandler;
+use PostSMS\Foundation\ErrorHandler\SentryDecorator;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Log\LoggerInterface;
